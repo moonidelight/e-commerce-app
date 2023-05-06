@@ -55,8 +55,12 @@ func (uc *UseCase) AddItem(name, description string, price float64) models.Item 
 	return uc.repo.AddItem(name, description, price)
 }
 
-func (uc *UseCase) SearchItem(name string) models.Item {
-	return uc.repo.SearchItem(name)
+func (uc *UseCase) SearchItem(name string) (models.Item, error) {
+	item := uc.repo.SearchItem(name)
+	if item.Id == 0 {
+		return item, errors.New("item with such name doesn't exists")
+	}
+	return item, nil
 }
 
 func (uc *UseCase) RateItem(id uint, rate int64) models.Item {
