@@ -25,6 +25,6 @@ func New() *Repository {
 		log.Fatal("Failed to connect")
 	}
 	log.Println("Connected")
-	db.AutoMigrate(&models2.User{}, &models2.Item{}, &models2.Order{})
+	db.AutoMigrate(&models2.User{}, &models2.Item{}, &models2.Comment{}, &models2.UserOrders{}, &models2.Rating{})
 	return &Repository{db: db}
 }

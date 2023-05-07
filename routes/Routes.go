@@ -17,7 +17,7 @@ func UserRoutes(route *gin.Engine) {
 	route.POST("/login", controllers.LogIn())
 	route.POST("/user/items", controllers.AddItem())
 	route.GET("/user/items", controllers.GetItem())
-	route.PUT("/user/items/id", controllers.RateItem())
+	route.PUT("/user/items", controllers.RateItem())
 	route.GET("/user/search", controllers.SearchItem())
 	route.GET("/user/filtered_items", controllers.FilterItem())
 
@@ -28,4 +28,6 @@ func UserRoutes(route *gin.Engine) {
 	route.POST("/logout", func(c *gin.Context) {
 		c.JSON(http.StatusContinue, gin.H{})
 	})
+	route.PUT("/user/item/comment", controllers.CommentItem())
+	route.POST("user/order", controllers.PurchaseItem())
 }

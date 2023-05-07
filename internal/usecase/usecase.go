@@ -2,8 +2,6 @@ package usecase
 
 import (
 	"errors"
-	"fmt"
-	"golang.org/x/crypto/bcrypt"
 	"project/internal/repository"
 	"project/models"
 	"project/tokens"
@@ -63,28 +61,22 @@ func (uc *UseCase) SearchItem(name string) (models.Item, error) {
 	return item, nil
 }
 
-func (uc *UseCase) RateItem(id uint, rate int64) models.Item {
-	return uc.repo.RateItem(id, rate)
+func (uc *UseCase) RateItem(itemId, userId int, rate int64) (models.Item, error) {
+	item, user := uint(itemId), uint(userId)
+	return uc.repo.RateItem(item, user, rate)
 }
 
-func (uc *UseCase) FilterItemByPriceAndRating(price float64, rating int64) []models.Item {
-	return uc.repo.FilterItemByRatingAndPrice(rating, price)
+func (uc *UseCase) FilterItemByPriceAndRating(minRating, maxRating int64, minPrice, maxPrice float64) []models.Item {
+	return uc.repo.FilterItemByRatingAndPrice(minRating, maxRating, minPrice, maxPrice)
 }
 
-func HashPassword(password string) (string, error) {
-	const costFactor = 12
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), costFactor)
-	if err != nil {
-		return "", err
-	}
-	return string(hashedPassword), nil
+func (uc *UseCase) CommentItem(userID, itemID int, text string) (models.Item, error) {
+	user := uint(userID)
+	item := uint(itemID)
+	return uc.repo.CommentItem(user, item, text)
 }
-
-func VerifyPassword(userPassword, givenPassword string) error {
-	err := bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(givenPassword))
-	if err != nil {
-		return fmt.Errorf("invalid password %s", err)
-	}
-	return nil
+func (uc *UseCase) PurchaseItem(userID, itemID int) (any, error) {
+	user := uint(userID)
+	item := uint(itemID)
+	return uc.repo.PurchaseItem(user, item)
 }

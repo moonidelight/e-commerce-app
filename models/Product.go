@@ -1,28 +1,33 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+)
 
 type Item struct {
 	Id          uint   `gorm:"primaryKey"`
 	Name        string `gorm:"not null"`
 	Description string
 	Price       float64
-	Rating      int64
+	Rating      float64
 	IsActive    bool
+	Comments    []Comment `gorm:"many2many:item_comments"`
 }
-type Order struct {
-	Id          uint `gorm:"primaryKey"`
-	UserId      uint
-	orderStatus bool
+type UserOrders struct {
+	UserID uint
+	Orders []Item `gorm:"many2many:user_orders"`
+	Status bool
 }
 
 type Comment struct {
-	gorm.Model
-	Rating []Rating `gorm:"foreignKey:CommentRefer"`
+	ItemID    uint
+	UserID    uint
+	Comment   string
+	CreatedAt time.Time
 }
 
 type Rating struct {
-	gorm.Model
-	Number       string
-	CommentRefer uint
+	ItemID uint
+	UserID uint
+	Rating int64
 }

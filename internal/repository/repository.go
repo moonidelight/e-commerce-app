@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"project/models"
+	"time"
 )
 
 //var (
@@ -50,8 +51,9 @@ func (repo *Repository) AddItem(name, description string, price float64) models.
 		Name:        name,
 		Price:       price,
 		Description: description,
-		Rating:      0,
 		IsActive:    true,
+		Comments:    []models.Comment{},
+		Rating:      0,
 	}
 	repo.db.Create(&item)
 	return item
@@ -63,24 +65,90 @@ func (repo *Repository) SearchItem(name string) models.Item {
 	return item
 }
 
-func (repo *Repository) FilterItemByRatingAndPrice(rating int64, price float64) []models.Item {
+func (repo *Repository) FilterItemByRatingAndPrice(minRating, maxRating int64, minPrice, maxPrice float64) []models.Item {
 	var items []models.Item
-	repo.db.Where("price >= ? AND rating >= ?", price, rating).Order("price, rating asc").Find(&items)
+	if maxPrice == -1 {
+		repo.db.Where("price >= ? AND rating >= ? AND rating <= ?", minPrice, minRating, maxRating).Order("price, rating asc").Find(&items)
+	}
+	repo.db.Where("price >= ? AND price <= ? AND rating >= ? AND rating <= ?", minPrice, maxPrice, minRating, maxRating).Order("price, rating asc").Find(&items)
 	return items
 }
 
-func (repo *Repository) RateItem(id uint, rating int64) models.Item {
-	item := repo.GetItem(id)
-	item.Rating = (item.Rating + rating) / 2
+func (repo *Repository) RateItem(itemId, userId uint, rating int64) (models.Item, error) {
+	item := repo.GetItem(itemId)
+
+	// check if user exits
+	_, err := repo.GetUserByID(userId)
+	if err != nil {
+		return models.Item{}, err
+	}
+	rate := models.Rating{
+		UserID: userId,
+		ItemID: itemId,
+		Rating: rating,
+	}
+	repo.db.Create(&rate)
+
+	var ratings []models.Rating
+	var sum int64
+	sum = 0
+	repo.db.Where("item_id = ?", itemId).Find(&ratings)
+
+	for r := range ratings {
+		sum += ratings[r].Rating
+	}
+	item.Rating = float64(sum / int64(len(ratings)))
 	repo.db.Save(&item)
-	return item
+	return item, nil
 }
 
 func (repo *Repository) GetItem(id uint) models.Item {
 	var item models.Item
-	err := repo.db.First(&item, "id = ?", id)
+	err := repo.db.First(&item, id).Error
 	if err != nil {
 		log.Panic(err)
 	}
 	return item
+}
+
+func (repo *Repository) CommentItem(userID, itemID uint, text string) (models.Item, error) {
+	item := repo.GetItem(itemID)
+	if item.Id == 0 {
+		return models.Item{}, errors.New("item not found")
+	}
+	_, err := repo.GetUserByID(userID)
+	if err != nil {
+		return models.Item{}, errors.New("user not found")
+	}
+	comment := models.Comment{
+		UserID:    userID,
+		Comment:   text,
+		CreatedAt: time.Now(),
+	}
+	repo.db.Create(&comment)
+	item.Comments = append(item.Comments, comment)
+	if err := repo.db.Save(&item).Error; err != nil {
+		return models.Item{}, errors.New("can't add comment")
+	}
+	return item, nil
+}
+
+func (repo *Repository) PurchaseItem(userID, itemID uint) (any, error) {
+	item := repo.GetItem(itemID)
+	if item.Id == 0 {
+		return nil, errors.New("item not found")
+	}
+	_, err := repo.GetUserByID(userID)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+	orders := models.UserOrders{
+		UserID: userID,
+		Status: true,
+	}
+	orders.Orders = append(orders.Orders, item)
+	if err = repo.db.Create(&orders).Error; err != nil {
+		return nil, errors.New("can't purchase item")
+	}
+	return orders, nil
 }
