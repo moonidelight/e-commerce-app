@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"project/models"
+	"strconv"
 	"time"
 )
 
@@ -68,9 +69,10 @@ func (repo *Repository) SearchItem(name string) models.Item {
 func (repo *Repository) FilterItemByRatingAndPrice(minRating, maxRating int64, minPrice, maxPrice float64) []models.Item {
 	var items []models.Item
 	if maxPrice == -1 {
-		repo.db.Where("price >= ? AND rating >= ? AND rating <= ?", minPrice, minRating, maxRating).Order("price, rating asc").Find(&items)
+		repo.db.Where("price >= ? AND (rating >= ? AND rating <= ?)", minPrice, minRating, maxRating).Order("price, rating asc").Find(&items)
+	} else {
+		repo.db.Where("(price >= ? AND price <= ?) AND (rating >= ? AND rating <= ?)", minPrice, maxPrice, minRating, maxRating).Order("price, rating asc").Find(&items)
 	}
-	repo.db.Where("price >= ? AND price <= ? AND rating >= ? AND rating <= ?", minPrice, maxPrice, minRating, maxRating).Order("price, rating asc").Find(&items)
 	return items
 }
 
@@ -87,17 +89,29 @@ func (repo *Repository) RateItem(itemId, userId uint, rating int64) (models.Item
 		ItemID: itemId,
 		Rating: rating,
 	}
-	repo.db.Create(&rate)
+	if err = repo.db.Create(&rate).Error; err != nil {
+		return models.Item{}, err
+	}
 
 	var ratings []models.Rating
 	var sum int64
 	sum = 0
-	repo.db.Where("item_id = ?", itemId).Find(&ratings)
-
+	if err = repo.db.Where("item_id = ?", itemId).Find(&ratings).Error; err != nil {
+		return models.Item{}, err
+	}
+	fmt.Println(len(ratings))
 	for r := range ratings {
 		sum += ratings[r].Rating
 	}
-	item.Rating = float64(sum / int64(len(ratings)))
+	fmt.Println(sum)
+	l := int64(len(ratings))
+	if l == 0 {
+		item.Rating = float64(rating)
+	} else {
+		r := float64(sum) / float64(l)
+		item.Rating, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", r), 64)
+		//fmt.Println(float64(sum / int64(len(ratings))))
+	}
 	repo.db.Save(&item)
 	return item, nil
 }

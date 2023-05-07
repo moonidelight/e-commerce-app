@@ -10,10 +10,3 @@ type User struct {
 	createdAt time.Time
 	updatedAt time.Time
 }
-type Admin struct {
-	User
-}
-type Seller struct {
-	User
-	Items []Item
-}

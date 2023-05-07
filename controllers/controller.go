@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -29,7 +30,6 @@ func GetItem() gin.HandlerFunc {
 }
 func RateItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		//h := c.Request.Header["Authorization"]
 		var body struct {
 			Rating int64
 		}
@@ -77,17 +77,26 @@ func SearchItem() gin.HandlerFunc {
 func FilterItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var body struct {
-			MinPrice  float64 `json:"min_price" default:"0"`
-			MaxPrice  float64 `json:"max_price" default:"-1"`
-			MinRating int64   `json:"min_rating" default:"0"`
-			MaxRating int64   `json:"max_rating" default:"5"`
+			MinPrice  float64 `json:"min_price"`
+			MaxPrice  float64 `json:"max_price"`
+			MinRating int64   `json:"min_rating"`
+			MaxRating int64   `json:"max_rating"`
 		}
-		if c.Bind(&body) != nil {
+		if c.BindJSON(&body) != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"Error": "Failed to read body",
 			})
 			return
 		}
+
+		if body.MaxRating == 0 {
+			body.MaxRating = 5
+		}
+		if body.MaxPrice == 0 {
+			body.MaxPrice = -1
+		}
+
+		fmt.Println(body.MinPrice, body.MaxPrice, body.MinRating, body.MaxRating)
 
 		c.JSON(http.StatusOK, uc.FilterItemByPriceAndRating(body.MinRating, body.MaxRating, body.MinPrice, body.MaxPrice))
 	}

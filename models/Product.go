@@ -14,12 +14,14 @@ type Item struct {
 	Comments    []Comment `gorm:"many2many:item_comments"`
 }
 type UserOrders struct {
+	ID     uint `gorm:"primaryKey"`
 	UserID uint
-	Orders []Item `gorm:"many2many:user_orders"`
+	Orders []Item `gorm:"many2many:user_orders_items"`
 	Status bool
 }
 
 type Comment struct {
+	ID        uint `gorm:"primaryKey"`
 	ItemID    uint
 	UserID    uint
 	Comment   string
@@ -27,6 +29,7 @@ type Comment struct {
 }
 
 type Rating struct {
+	ID     uint `gorm:"primaryKey"`
 	ItemID uint
 	UserID uint
 	Rating int64
