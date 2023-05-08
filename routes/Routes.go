@@ -15,11 +15,15 @@ type Routes struct {
 func UserRoutes(route *gin.Engine) {
 	route.POST("/signup", controllers.SignUp())
 	route.POST("/login", controllers.LogIn())
+
 	route.POST("/user/items", controllers.AddItem())
-	route.GET("/user/items", controllers.GetItem())
 	route.PUT("/user/items", controllers.RateItem())
-	route.GET("/user/search", controllers.SearchItem())
 	route.GET("/user/filtered_items", controllers.FilterItem())
+	route.PUT("/user/item/comment", controllers.CommentItem())
+	route.POST("/user/order", controllers.AddOrder())
+	route.GET("/user/order/pay", controllers.PurchaseItem())
+
+	route.GET("/user/search", controllers.SearchItem())
 
 	protected := route.Group("/api")
 	protected.Use(middleware.JwtAuthMiddleware())
@@ -28,6 +32,5 @@ func UserRoutes(route *gin.Engine) {
 	route.POST("/logout", func(c *gin.Context) {
 		c.JSON(http.StatusContinue, gin.H{})
 	})
-	route.PUT("/user/item/comment", controllers.CommentItem())
-	route.POST("user/order", controllers.PurchaseItem())
+
 }

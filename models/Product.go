@@ -10,27 +10,38 @@ type Item struct {
 	Description string
 	Price       float64
 	Rating      float64
-	IsActive    bool
-	Comments    []Comment `gorm:"many2many:item_comments"`
-}
-type UserOrders struct {
-	ID     uint `gorm:"primaryKey"`
-	UserID uint
-	Orders []Item `gorm:"many2many:user_orders_items"`
-	Status bool
 }
 
 type Comment struct {
 	ID        uint `gorm:"primaryKey"`
-	ItemID    uint
-	UserID    uint
+	UserID    uint `gorm:"not null"`
+	ItemID    uint `gorm:"not null"`
 	Comment   string
 	CreatedAt time.Time
 }
 
 type Rating struct {
 	ID     uint `gorm:"primaryKey"`
-	ItemID uint
-	UserID uint
+	UserID uint `gorm:"not null"`
+	ItemID uint `gorm:"not null"`
 	Rating int64
+}
+
+type Order struct {
+	ID        uint `gorm:"primaryKey"`
+	UserID    uint `gorm:"not null"`
+	CreatedAt time.Time
+	Status    bool
+	Items     []OrderItem `gorm:"foreignKey:OrderID"`
+}
+type OrderItem struct {
+	ID      uint `gorm:"primaryKey"`
+	OrderID uint `gorm:"not null"`
+	ItemID  uint `gorm:"not null"`
+}
+type Payment struct {
+	ID          uint `gorm:"primaryKey"`
+	OrderID     uint `gorm:"not null"`
+	Amount      float64
+	PaymentDate time.Time
 }

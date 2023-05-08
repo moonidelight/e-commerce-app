@@ -70,13 +70,20 @@ func (uc *UseCase) FilterItemByPriceAndRating(minRating, maxRating int64, minPri
 	return uc.repo.FilterItemByRatingAndPrice(minRating, maxRating, minPrice, maxPrice)
 }
 
-func (uc *UseCase) CommentItem(userID, itemID int, text string) (models.Item, error) {
+func (uc *UseCase) CommentItem(userID, itemID int, text string) (interface{}, error) {
 	user := uint(userID)
 	item := uint(itemID)
 	return uc.repo.CommentItem(user, item, text)
 }
-func (uc *UseCase) PurchaseItem(userID, itemID int) (any, error) {
+func (uc *UseCase) AddOrder(userID int, itemIDs []int) (any, error) {
 	user := uint(userID)
-	item := uint(itemID)
-	return uc.repo.PurchaseItem(user, item)
+	var items []uint
+	for _, id := range itemIDs {
+		items = append(items, uint(id))
+	}
+	return uc.repo.AddOrder(user, items)
+}
+func (uc *UseCase) PurchaseItem(user, order int) (interface{}, error) {
+	userId, orderId := uint(user), uint(order)
+	return uc.repo.PurchaseItem(userId, orderId)
 }

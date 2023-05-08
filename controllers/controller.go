@@ -24,7 +24,7 @@ func AddItem() gin.HandlerFunc {
 		c.JSON(http.StatusCreated, items)
 	}
 }
-func GetItem() gin.HandlerFunc {
+func GetItemList() gin.HandlerFunc {
 	return func(c *gin.Context) {
 	}
 }
@@ -138,11 +138,19 @@ func CommentItem() gin.HandlerFunc {
 	}
 }
 
-func PurchaseItem() gin.HandlerFunc {
+func AddOrder() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		itemID, _ := strconv.Atoi(c.Query("item_id"))
 		userID, _ := strconv.Atoi(c.Query("user_id"))
-		orders, err := uc.PurchaseItem(userID, itemID)
+		var body struct {
+			Items []int
+		}
+		if c.BindJSON(&body) != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Error": "Failed to read body",
+			})
+			return
+		}
+		orders, err := uc.AddOrder(userID, body.Items)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"Error": err,
@@ -150,5 +158,32 @@ func PurchaseItem() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusCreated, orders)
+	}
+}
+
+func PurchaseItem() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userId, err := strconv.Atoi(c.Query("user_id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Error": err,
+			})
+			return
+		}
+		orderId, err := strconv.Atoi(c.Query("order_id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Error": err,
+			})
+			return
+		}
+		info, err := uc.PurchaseItem(userId, orderId)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Error": err,
+			})
+			return
+		}
+		c.JSON(http.StatusOK, info)
 	}
 }
