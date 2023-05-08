@@ -1,7 +1,6 @@
 <h1>E - commerce app</h1>
 
 <ul>
-    <li>Home Page</li>
     <li>Register, Login</li>
     <li>Product</li>
 </ul>
