@@ -15,7 +15,6 @@
         </ul>
     </li>
     <li>PostgreSQL</li>
-    <li>Docker</li>
 </ul>
 
 <ul> User :
