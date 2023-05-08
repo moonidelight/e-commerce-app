@@ -15,7 +15,7 @@ type Repository struct {
 }
 
 func New() *Repository {
-	err := godotenv.Load("../config/.env")
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal(err)
 	}
