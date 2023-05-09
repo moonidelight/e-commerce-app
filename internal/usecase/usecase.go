@@ -49,8 +49,8 @@ func (uc *UseCase) Login(email, givenPassword string) (string, error) {
 	return token, nil
 }
 
-func (uc *UseCase) AddItem(name, description string, price float64) models.Item {
-	return uc.repo.AddItem(name, description, price)
+func (uc *UseCase) AddItem(name, description string, price float64, userId int) models.Item {
+	return uc.repo.AddItem(name, description, price, uint(userId))
 }
 
 func (uc *UseCase) SearchItem(name string) (models.Item, error) {

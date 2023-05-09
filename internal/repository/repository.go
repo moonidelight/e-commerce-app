@@ -43,7 +43,7 @@ func (repo *Repository) Login(email string) models.User {
 	return user
 }
 
-func (repo *Repository) AddItem(name, description string, price float64) models.Item {
+func (repo *Repository) AddItem(name, description string, price float64, userId uint) models.Item {
 	item := models.Item{
 		Name:        name,
 		Price:       price,
@@ -51,6 +51,11 @@ func (repo *Repository) AddItem(name, description string, price float64) models.
 		Rating:      0,
 	}
 	repo.db.Create(&item)
+	ui := models.UserItem{
+		ItemID: item.Id,
+		UserID: userId,
+	}
+	repo.db.Create(&ui)
 	return item
 }
 
@@ -71,7 +76,11 @@ func (repo *Repository) FilterItemByRatingAndPrice(minRating, maxRating int64, m
 }
 
 func (repo *Repository) RateItem(itemId, userId uint, rating int64) (models.Item, error) {
+	// check if item exist
 	item := repo.GetItem(itemId)
+	if item.Id == 0 {
+		return models.Item{}, errors.New("item not found")
+	}
 
 	// check if user exist
 	_, err := repo.GetUserByID(userId)
@@ -79,26 +88,38 @@ func (repo *Repository) RateItem(itemId, userId uint, rating int64) (models.Item
 		return models.Item{}, err
 	}
 
-	rate := models.Rating{
-		UserID: userId,
-		ItemID: itemId,
+	// check if user rated item
+	var r models.Rating
+	repo.db.Where("user_id = ? AND item_id = ?", userId, itemId).First(&r)
+	if r.RatingID != 0 {
+		return item, errors.New("user already rated this item")
+	}
+	rate := models.RatingDetail{ // create ratingDetail model
 		Rating: rating,
 	}
 	if err = repo.db.Create(&rate).Error; err != nil {
 		return models.Item{}, err
 	}
 
-	var ratings []models.Rating
-	var sum int64
-	sum = 0
-	if err = repo.db.Where("item_id = ?", itemId).Find(&ratings).Error; err != nil {
+	r = models.Rating{ // create rating model
+		RatingID:     rate.ID,
+		UserID:       userId,
+		ItemID:       itemId,
+		RatingDetail: rate,
+	}
+	if err = repo.db.Create(&r).Error; err != nil { // if user not rated yet
 		return models.Item{}, err
 	}
-	fmt.Println(len(ratings))
-	for r := range ratings {
-		sum += ratings[r].Rating
+
+	var ratings []models.Rating
+
+	repo.db.Where("item_id", itemId).Preload("RatingDetail").Find(&ratings)
+
+	sum := int64(0)
+	for _, v := range ratings {
+		sum += v.RatingDetail.Rating
 	}
-	fmt.Println(sum)
+
 	l := int64(len(ratings))
 	if l == 0 {
 		item.Rating = float64(rating)
@@ -129,32 +150,44 @@ func (repo *Repository) CommentItem(userID, itemID uint, text string) (interface
 		return nil, errors.New("user not found")
 	}
 
-	comment := models.Comment{
-		UserID:    userID,
-		ItemID:    itemID,
+	comment := models.CommentDetail{
 		Comment:   text,
 		CreatedAt: time.Now(),
 	}
 	if err = repo.db.Create(&comment).Error; err != nil {
 		return nil, err
 	}
-	var comments []models.Comment
-	repo.db.Where("item_id", itemID).Find(&comments)
-	return comments, nil
+
+	var addComment models.Comment
+	repo.db.Where("item_id = ? AND user_id = ?", itemID, userID).First(&addComment)
+	if addComment.ID == 0 {
+		addComment = models.Comment{
+			ItemID:   itemID,
+			UserID:   userID,
+			Comments: []models.CommentDetail{},
+		}
+		repo.db.Create(&addComment)
+	}
+	addComment.Comments = append(addComment.Comments, comment)
+	repo.db.Save(&addComment)
+
+	return addComment.Comments, nil
 }
 
 func (repo *Repository) AddOrder(userID uint, itemIDs []uint) (any, error) {
 	var items []models.Item
 	repo.db.Where("id IN ?", itemIDs).Find(&items)
-	fmt.Println(items)
+
 	_, err := repo.GetUserByID(userID)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
+
 	order := models.Order{
-		UserID:    userID,
 		CreatedAt: time.Now(),
 		Status:    true,
+		UserID:    userID,
+		Total:     0,
 	}
 	repo.db.Create(&order)
 
@@ -162,15 +195,15 @@ func (repo *Repository) AddOrder(userID uint, itemIDs []uint) (any, error) {
 		orderItem := models.OrderItem{
 			OrderID: order.ID,
 			ItemID:  item.Id,
+			Item:    item,
 		}
+		order.Total += item.Price
 		repo.db.Create(&orderItem)
-
 	}
-	var orders models.Order
-	if err = repo.db.Preload("Items").First(&orders, order.ID).Error; err != nil {
-		return nil, err
-	}
-	return orders, nil
+	repo.db.Save(&order)
+	var orderItems []models.OrderItem
+	repo.db.Preload("Item").Find(&orderItems, "order_id = ?", order.ID)
+	return orderItems, nil
 }
 
 func (repo *Repository) PurchaseItem(userId, orderId uint) (interface{}, error) {
@@ -179,24 +212,9 @@ func (repo *Repository) PurchaseItem(userId, orderId uint) (interface{}, error) 
 	if order.ID == 0 {
 		return nil, nil
 	}
-	var total float64
-	total = 0
-	var orders models.Order
-	if err := repo.db.Preload("Items").First(&orders, order.ID).Error; err != nil {
-		return nil, err
-	}
-	itemIDs := make([]uint, len(orders.Items))
-	for i, oi := range orders.Items {
-		itemIDs[i] = oi.ItemID
-	}
-	var items []models.Item
-	repo.db.Where("id in ?", itemIDs).Find(&items)
-	for _, item := range items {
-		total += item.Price
-	}
-	pay := models.Payment{
-		OrderID:     orderId,
-		Amount:      total,
+
+	pay := models.PaymentDetail{
+		Amount:      order.Total,
 		PaymentDate: time.Now(),
 	}
 	order.Status = false
@@ -204,5 +222,11 @@ func (repo *Repository) PurchaseItem(userId, orderId uint) (interface{}, error) 
 	if err := repo.db.Create(&pay).Error; err != nil {
 		return nil, err
 	}
+
+	repo.db.Create(&models.Payment{
+		PaymentID: pay.ID,
+		OrderID:   orderId,
+		UserID:    userId,
+	})
 	return pay, nil
 }

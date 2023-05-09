@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"os"
-	"project/middleware"
 	"project/routes"
 )
 
@@ -17,7 +16,7 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Logger())
 	routes.UserRoutes(router)
-	router.Use(middleware.JwtAuthMiddleware())
+	//router.Use(middleware.JwtAuthMiddleware())
 	//router.GET("/")
 	log.Fatal(router.Run(":" + port))
 }

@@ -11,37 +11,48 @@ type Item struct {
 	Price       float64
 	Rating      float64
 }
-
-type Comment struct {
+type CommentDetail struct {
 	ID        uint `gorm:"primaryKey"`
-	UserID    uint `gorm:"not null"`
-	ItemID    uint `gorm:"not null"`
 	Comment   string
 	CreatedAt time.Time
 }
+type Comment struct {
+	ID       uint            `gorm:"primaryKey"`
+	ItemID   uint            `gorm:"not null"`
+	UserID   uint            `gorm:"not null"`
+	Comments []CommentDetail `gorm:"many2many:ID"`
+}
 
-type Rating struct {
+type RatingDetail struct {
 	ID     uint `gorm:"primaryKey"`
-	UserID uint `gorm:"not null"`
-	ItemID uint `gorm:"not null"`
 	Rating int64
 }
-
+type Rating struct {
+	RatingID     uint         `gorm:"not null"`
+	UserID       uint         `gorm:"not null"`
+	ItemID       uint         `gorm:"not null"`
+	RatingDetail RatingDetail `gorm:"foreignKey:RatingID"`
+}
 type Order struct {
 	ID        uint `gorm:"primaryKey"`
-	UserID    uint `gorm:"not null"`
 	CreatedAt time.Time
 	Status    bool
-	Items     []OrderItem `gorm:"foreignKey:OrderID"`
+	UserID    uint `gorm:"not null"`
+	Total     float64
 }
 type OrderItem struct {
-	ID      uint `gorm:"primaryKey"`
 	OrderID uint `gorm:"not null"`
 	ItemID  uint `gorm:"not null"`
+	Item    Item `gorm:"foreignKey:ItemID"`
 }
-type Payment struct {
+
+type PaymentDetail struct {
 	ID          uint `gorm:"primaryKey"`
-	OrderID     uint `gorm:"not null"`
 	Amount      float64
 	PaymentDate time.Time
+}
+type Payment struct {
+	PaymentID uint `gorm:"not null"`
+	OrderID   uint `gorm:"not null"`
+	UserID    uint `gorm:"not null"`
 }

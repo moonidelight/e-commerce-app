@@ -15,7 +15,7 @@ type Repository struct {
 }
 
 func New() *Repository {
-	err := godotenv.Load(".env")
+	err := godotenv.Load("../config/.env")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,6 +36,18 @@ func New() *Repository {
 		log.Fatal("Failed to connect")
 	}
 	log.Println("Connected")
-	db.AutoMigrate(&models2.User{}, &models2.Item{}, &models2.Comment{}, &models2.Rating{}, &models2.Order{}, &models2.OrderItem{}, &models2.Payment{})
+	db.AutoMigrate(
+		&models2.User{},
+		&models2.Item{},
+		&models2.CommentDetail{},
+		&models2.Comment{},
+		&models2.Rating{},
+		&models2.RatingDetail{},
+		&models2.OrderItem{},
+		&models2.Order{},
+		&models2.PaymentDetail{},
+		&models2.Payment{},
+		&models2.UserItem{},
+	)
 	return &Repository{db: db}
 }

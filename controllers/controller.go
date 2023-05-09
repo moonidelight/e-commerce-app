@@ -20,14 +20,18 @@ func AddItem() gin.HandlerFunc {
 			})
 			return
 		}
-		items := uc.AddItem(body.Name, body.Description, body.Price)
+		userId, err := strconv.Atoi(c.Query("user_id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Error": "Failed to convert to int",
+			})
+			return
+		}
+		items := uc.AddItem(body.Name, body.Description, body.Price, userId)
 		c.JSON(http.StatusCreated, items)
 	}
 }
-func GetItemList() gin.HandlerFunc {
-	return func(c *gin.Context) {
-	}
-}
+
 func RateItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var body struct {

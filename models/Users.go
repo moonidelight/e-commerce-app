@@ -10,3 +10,9 @@ type User struct {
 	createdAt time.Time
 	updatedAt time.Time
 }
+
+// UserItem to store all items that user added
+type UserItem struct {
+	ItemID uint `gorm:"not null"`
+	UserID uint `gorm:"not null"`
+}
