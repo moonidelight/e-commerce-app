@@ -5,6 +5,7 @@ import (
 	"project/internal/repository"
 	"project/models"
 	"project/tokens"
+	"time"
 )
 
 type UseCase struct {
@@ -70,10 +71,27 @@ func (uc *UseCase) FilterItemByPriceAndRating(minRating, maxRating int64, minPri
 	return uc.repo.FilterItemByRatingAndPrice(minRating, maxRating, minPrice, maxPrice)
 }
 
+type responseComment struct {
+	ID        uint
+	Comment   string
+	CreatedAt time.Time
+	UserID    uint
+}
+
 func (uc *UseCase) CommentItem(userID, itemID int, text string) (interface{}, error) {
 	user := uint(userID)
 	item := uint(itemID)
-	return uc.repo.CommentItem(user, item, text)
+
+	c, err := uc.repo.CommentItem(user, item, text)
+
+	comments := make([]responseComment, len(c))
+	for i, comment := range c {
+		comments[i].ID = comment.ID
+		comments[i].Comment = comment.Comment
+		comments[i].CreatedAt = comment.CreatedAt
+		comments[i].UserID = comment.UserID
+	}
+	return comments, err
 }
 func (uc *UseCase) AddOrder(userID int, itemIDs []int) (any, error) {
 	user := uint(userID)
@@ -83,7 +101,11 @@ func (uc *UseCase) AddOrder(userID int, itemIDs []int) (any, error) {
 	}
 	return uc.repo.AddOrder(user, items)
 }
-func (uc *UseCase) PurchaseItem(user, order int) (interface{}, error) {
-	userId, orderId := uint(user), uint(order)
-	return uc.repo.PurchaseItem(userId, orderId)
+func (uc *UseCase) PurchaseItem(order int) (interface{}, error) {
+
+	return uc.repo.PurchaseItem(uint(order))
+}
+
+func (uc *UseCase) UserBank(userId int, money float64) bool {
+	return uc.repo.UserBank(uint(userId), money)
 }

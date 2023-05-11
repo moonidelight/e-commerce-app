@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type User struct {
 	Id        uint   `gorm:"primaryKey"`
@@ -13,6 +15,11 @@ type User struct {
 
 // UserItem to store all items that user added
 type UserItem struct {
-	ItemID uint `gorm:"not null"`
+	ItemID uint `gorm:"primaryKey"`
 	UserID uint `gorm:"not null"`
+}
+
+type Bank struct {
+	UserID uint `gorm:"primaryKey"`
+	Money  float64
 }

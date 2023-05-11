@@ -25,6 +25,7 @@ func UserRoutes(route *gin.Engine) {
 
 	route.GET("/user/search", controllers.SearchItem())
 
+	route.POST("/user/account", controllers.UserBank())
 	protected := route.Group("/api")
 	protected.Use(middleware.JwtAuthMiddleware())
 	protected.GET("/user", controllers.CurrentUser)

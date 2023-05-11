@@ -157,7 +157,7 @@ func AddOrder() gin.HandlerFunc {
 		orders, err := uc.AddOrder(userID, body.Items)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"Error": err,
+				"Error": err.Error(),
 			})
 			return
 		}
@@ -167,13 +167,6 @@ func AddOrder() gin.HandlerFunc {
 
 func PurchaseItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userId, err := strconv.Atoi(c.Query("user_id"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"Error": err,
-			})
-			return
-		}
 		orderId, err := strconv.Atoi(c.Query("order_id"))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -181,13 +174,41 @@ func PurchaseItem() gin.HandlerFunc {
 			})
 			return
 		}
-		info, err := uc.PurchaseItem(userId, orderId)
+		info, err := uc.PurchaseItem(orderId)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"Error": err,
+				"Error": err.Error(),
 			})
 			return
 		}
 		c.JSON(http.StatusOK, info)
+	}
+}
+
+func UserBank() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var body struct {
+			Money float64
+		}
+		userid, _ := strconv.Atoi(c.Query("user_id"))
+
+		if c.BindJSON(&body) != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Error": "can't read body",
+			})
+			return
+		}
+
+		ok := uc.UserBank(userid, body.Money)
+
+		if ok {
+			c.JSON(http.StatusOK, gin.H{
+				"Success": "money added",
+			})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Problem": "can't add money",
+		})
 	}
 }

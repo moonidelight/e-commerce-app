@@ -39,15 +39,13 @@ func New() *Repository {
 	db.AutoMigrate(
 		&models2.User{},
 		&models2.Item{},
-		&models2.CommentDetail{},
 		&models2.Comment{},
 		&models2.Rating{},
-		&models2.RatingDetail{},
-		&models2.OrderItem{},
 		&models2.Order{},
-		&models2.PaymentDetail{},
+		&models2.OrderItem{},
 		&models2.Payment{},
 		&models2.UserItem{},
+		&models2.Bank{},
 	)
 	return &Repository{db: db}
 }
